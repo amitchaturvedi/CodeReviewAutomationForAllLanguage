@@ -26,7 +26,7 @@ class CodeReviewConfig:
     def __init__(self):
         # LLM Configuration
         self.ollama_url = os.getenv('OLLAMA_URL', 'http://localhost:11434')
-        self.ollama_model = os.getenv('OLLAMA_MODEL', 'llama3')
+        self.ollama_model = os.getenv('OLLAMA_MODEL', 'codellama:latest')
         
         # Azure OpenAI Configuration
         self.azure_endpoint = os.getenv('AZURE_OPENAI_ENDPOINT')
@@ -63,7 +63,7 @@ class GitOperations:
         """Get list of staged files"""
         try:
             result = subprocess.run(['git', 'diff', '--cached', '--name-only'], 
-                                  capture_output=True, text=True, check=True)
+                                  capture_output=True, text=True, check=True, encoding='utf-8', errors='replace')
             return [f.strip() for f in result.stdout.split('\n') if f.strip()]
         except subprocess.CalledProcessError:
             return []
@@ -73,7 +73,7 @@ class GitOperations:
         """Get list of modified files (not staged)"""
         try:
             result = subprocess.run(['git', 'diff', '--name-only'], 
-                                  capture_output=True, text=True, check=True)
+                                  capture_output=True, text=True, check=True, encoding='utf-8', errors='replace')
             return [f.strip() for f in result.stdout.split('\n') if f.strip()]
         except subprocess.CalledProcessError:
             return []
@@ -85,7 +85,7 @@ class GitOperations:
             cmd = ['git', 'diff', '--cached' if staged else '', filepath]
             cmd = [c for c in cmd if c]  # Remove empty strings
             
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True, encoding='utf-8', errors='replace')
             return result.stdout
         except subprocess.CalledProcessError:
             return ""
@@ -97,7 +97,7 @@ class GitOperations:
             if staged:
                 # Get staged version
                 result = subprocess.run(['git', 'show', f':{filepath}'], 
-                                      capture_output=True, text=True, check=True)
+                                      capture_output=True, text=True, check=True, encoding='utf-8', errors='replace')
                 return result.stdout
             else:
                 # Get working directory version
@@ -254,6 +254,10 @@ class CodeReviewer:
         """Determine if a file should be reviewed"""
         path = Path(filepath)
         
+        # Explicitly skip deleted files
+        if not path.exists():
+            return False
+
         # Check if it's a code file
         if path.suffix not in self.config.code_extensions:
             return False
@@ -353,6 +357,7 @@ def install_git_hooks():
     pre_commit_hook = hooks_dir / 'pre-commit'
     pre_commit_content = '''#!/bin/bash
 # Auto-generated LLM Code Review pre-commit hook
+# This hook reviews only staged files and blocks commit if HIGH risk issues are found.
 
 echo "🔍 Running LLM Code Review on staged files..."
 python3 "$(git rev-parse --show-toplevel)/code_reviewer.py" --hook pre-commit
@@ -361,13 +366,9 @@ python3 "$(git rev-parse --show-toplevel)/code_reviewer.py" --hook pre-commit
 if [ -f ".review_result" ]; then
     RISK_LEVEL=$(cat .review_result)
     if [ "$RISK_LEVEL" = "HIGH" ]; then
-        echo "⚠️  HIGH RISK changes detected. Please review the generated .review.md files."
-        echo "Continue anyway? (y/N)"
-        read -r response
-        if [[ ! "$response" =~ ^[Yy]$ ]]; then
-            echo "❌ Commit aborted"
-            exit 1
-        fi
+        echo "❌ Commit blocked: HIGH RISK changes detected. Please review the generated .review.md files."
+        rm -f .review_result
+        exit 1
     fi
     rm -f .review_result
 fi
@@ -383,7 +384,7 @@ echo "✅ Code review completed"
     pre_commit_hook.chmod(0o755)
     
     print("✅ Git hooks installed successfully!")
-    print("📝 Reviews will be generated automatically on commit")
+    print("📝 Reviews will be generated automatically on commit and commits will be blocked if HIGH risk issues are found.")
     return True
 
 def main():
