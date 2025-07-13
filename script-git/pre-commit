@@ -24,4 +24,4 @@
       rm -f .review_result
   fi
 
-  echo "✅ Code review completed"
+  echo "✅ Code review completed successfully"
