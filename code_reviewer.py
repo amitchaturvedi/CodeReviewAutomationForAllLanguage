@@ -376,7 +376,7 @@ echo "✅ Code review completed"
 '''
     
     # Write pre-commit hook
-    with open(pre_commit_hook, 'w') as f:
+    with open(pre_commit_hook, 'w', encoding="utf-8") as f:
         f.write(pre_commit_content)
     
     # Make executable
