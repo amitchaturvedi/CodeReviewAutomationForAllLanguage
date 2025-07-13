@@ -52,6 +52,6 @@ int main() {
         std::cerr << "Exception: " << ex.what() << std::endl;
     }
 
-    std::cout << "Total elements: " << vec->size() << std::endl;
+    std::cout << "Total elementss: " << vec->size() << std::endl;
     return 0;
 }
