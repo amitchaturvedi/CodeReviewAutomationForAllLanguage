@@ -1,0 +1,27 @@
+  #!/bin/bash
+  # Auto-generated LLM Code Review pre-commit hook
+
+  echo "🔍 Running LLM Code Review on staged files..."
+  python3 "$(git rev-parse --show-toplevel)/code_reviewer.py" --hook pre-commit
+  REVIEW_EXIT_CODE=$?
+  if [ $REVIEW_EXIT_CODE -ne 0 ]; then
+      echo "❌ Commit blocked: Code review failed (LLM unavailable or error)."
+      exit 1
+  fi
+
+  # Check if reviews indicate high risk
+  if [ -f ".review_result" ]; then
+      RISK_LEVEL=$(cat .review_result)
+      if [ "$RISK_LEVEL" = "HIGH" ]; then
+          echo "⚠️  HIGH RISK changes detected. Please review the generated .review.md files."
+          echo "Continue anyway? (y/N)"
+          read -r response
+          if [[ ! "$response" =~ ^[Yy]$ ]]; then
+              echo "❌ Commit aborted"
+              exit 1
+          fi
+      fi
+      rm -f .review_result
+  fi
+
+  echo "✅ Code review completed"

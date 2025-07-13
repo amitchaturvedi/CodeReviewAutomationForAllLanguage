@@ -150,7 +150,7 @@ class LLMClient:
             response = requests.post(
                 f"{self.config.ollama_url}/api/generate",
                 json=payload,
-                timeout=120
+                timeout=300 # <-- Increase this if needed
             )
             
             if response.status_code == 200:
@@ -436,6 +436,8 @@ def main():
     
     if not files:
         print("✅ No files to review")
+        if args.hook:
+            sys.exit(1)
         return
     
     # Review files
@@ -454,6 +456,8 @@ def main():
         print(f"\n✅ Generated {len(reviews)} code reviews")
     else:
         print("❌ No reviews generated")
+        if args.hook:
+            sys.exit(1)
 
 if __name__ == "__main__":
     main()
