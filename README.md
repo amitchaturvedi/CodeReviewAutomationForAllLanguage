@@ -9,7 +9,7 @@ A Git-based, LLM-powered code review tool for any language (C++, Python, Kotlin,
 - Supports multiple languages (C++, Python, Kotlin, etc.)
 - LLM backend: Azure OpenAI (preferred) or Ollama/CodeLlama (fallback)
 - Blocks commit if critical (HIGH risk) issues are found or if review fails
-- Hybrid Git hook management: versioned hooks + Python installer
+- Simple, cross-platform Git hook setup
 - Cross-platform: Linux, Mac, Windows (with PowerShell or Git Bash)
 
 ---
@@ -93,20 +93,30 @@ $env:OLLAMA_MODEL = "codellama:latest"
 
 ---
 
-## 5. Git Hooks (Hybrid Approach)
+## 5. Git Hooks Setup (Recommended: Manual Copy)
 
-### A. Versioned Hooks Directory
-- The `.githooks/` directory contains the `pre-commit` hook script.
-- To use it:
-  ```sh
-  git config core.hooksPath .githooks
-  ```
+### A. Add the Pre-commit Hook
+- This repository includes a sample pre-commit hook file in the `.githooks/` directory.
+- **After cloning the repo, copy the hook to your local `.git/hooks/` directory:**
 
-### B. Python Installer
-- You can also install the hook with:
-  ```sh
-  python code_reviewer.py --install-hooks
-  ```
+### **Linux/Mac/Git Bash:**
+```sh
+cp script-git/pre-commit .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
+### **Windows (PowerShell):**
+```powershell
+Copy-Item script-git/pre-commit .git/hooks/pre-commit
+# No need for chmod on Windows
+```
+
+- Now, every time you run `git commit`, the code review will run automatically!
+
+### Why this approach?
+- **Simple:** No special git config or Python install step needed.
+- **Cross-platform:** Works on Linux, Mac, and Windows (with Git Bash or PowerShell).
+- **Easy to update:** Just copy the new hook if it changes.
 
 ---
 
@@ -141,6 +151,7 @@ python code_reviewer.py --staged
 ---
 
 ## 8. Security
+- Never commit your Azure API key or secrets to a public repo!
 - Use environment variables or a `.env` file (add `.env` to `.gitignore`).
 
 ---
